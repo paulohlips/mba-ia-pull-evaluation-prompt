@@ -343,6 +343,61 @@ print(Client().share_dataset(dataset_name="<seu LANGSMITH_PROJECT>-eval")["url"]
 
 Rode uma vez e guarde o endereço: ao compartilhar de novo, o link muda.
 
+## Técnicas Aplicadas (Fase 2)
+
+| Técnica | Por que escolhi | Como apliquei |
+|--------|-----------------|---------------|
+| **Role Prompting** | User Stories exigem visão de produto e linguagem de negócio | Persona fixa de Product Manager sênior agile no `system_prompt` |
+| **Few-shot Learning** | O dataset tem padrões claros (simples → complexo) | Seis exemplos completos de entrada/saída cobrindo UI, integração, regra de negócio e dashboard |
+| **Chain of Thought (CoT)** | Bugs médios/complexos pedem decomposição antes da redação | Checklist interno de 5 passos antes de escrever a story (não exposto na resposta) |
+| **Skeleton of Thought** | Métricas de clareza/precisão penalizam formato inconsistente | Dois esqueletos explícitos: formato compacto vs. seções `===` para bugs críticos |
+
+**Mudanças principais em relação à v1:** removi `{bug_report}` duplicado do system (fica só no user), acrescentei regras de comportamento, edge cases (segurança, performance, concorrência), few-shots alinhados ao dataset e estrutura Markdown/User Story padronizada.
+
+## Resultados Finais
+
+Última execução real válida da versão publicada `paulohlips/bug_to_user_story_v2`, usando `gpt-4o` para geração e avaliação:
+
+- Helpfulness: **0,87**
+- Correctness: **0,82**
+- F1-Score: **0,81**
+- Clarity: **0,90**
+- Precision: **0,84**
+- Média geral: **0,8481**
+- Status: **APROVADO** — todas as métricas ≥ 0,8
+- Experimento: [ver resultados no LangSmith](https://smith.langchain.com/o/615c0d77-200c-490c-9083-2305197941c7/datasets/f39ac866-1288-4923-91ed-da0cc7445408/compare?selectedSessions=d8960929-7469-4348-8760-77492c5f656c)
+
+O código de pull, push, avaliação e testes está concluído. O resultado pode variar entre execuções porque as métricas são julgadas por LLM; para uma nova iteração, edite somente `prompts/bug_to_user_story_v2.yml`, publique novamente e rode `python src/evaluate.py`.
+
+## Como Executar
+
+### Pré-requisitos
+
+- Python 3.10+
+- Conta LangSmith com `LANGSMITH_API_KEY`
+- Handle público do Hub em `USERNAME_LANGSMITH_HUB` (criado ao tornar o primeiro prompt público)
+- OpenAI **ou** Google: chaves e modelos em `LLM_MODEL` / `EVAL_MODEL` (aceitam `temperature=0`)
+
+### Variáveis de ambiente (`.env`)
+
+| Variável | Exemplo / orientação |
+|----------|----------------------|
+| `USERNAME_LANGSMITH_HUB` | Seu handle escolhido em LangSmith → Prompts → Make Public (ex.: `phsilva`) |
+| `LLM_PROVIDER` | `openai` ou `google` |
+| `LLM_MODEL` | OpenAI: `gpt-4o` (geração). Google: ex. `gemini-2.0-flash` |
+| `EVAL_MODEL` | Pode ser igual ou mais leve: `gpt-4o-mini` / `gemini-2.0-flash` |
+
+### Comandos
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+pytest tests/test_prompts.py -v
+python src/pull_prompts.py
+python src/push_prompts.py
+python src/evaluate.py
+```
+
 ## Dicas Finais
 
 - Lembre-se da importância da especificidade, contexto e persona ao refatorar prompts
